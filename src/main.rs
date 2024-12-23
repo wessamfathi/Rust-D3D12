@@ -1,35 +1,69 @@
 mod dx12;
 
-use windows::{core::Result, Win32::System::Threading::*};
+use std::mem;
 
-static COUNTER: std::sync::RwLock<i32> = std::sync::RwLock::new(0);
+use windows::{core::Result, Win32::{Foundation::{HINSTANCE, HWND, LPARAM, LRESULT, WPARAM}, Graphics::Gdi::{GetSysColorBrush, COLOR_WINDOWFRAME}, System::LibraryLoader::GetModuleHandleW, UI::WindowsAndMessaging::{CreateWindowExW, DefWindowProcW, DispatchMessageW, LoadCursorW, PeekMessageW, PostQuitMessage, RegisterClassExW, ShowWindow, TranslateMessage, CS_HREDRAW, CS_VREDRAW, HICON, IDC_ARROW, MSG, PM_REMOVE, SW_SHOW, WINDOW_EX_STYLE, WM_DESTROY, WM_QUIT, WNDCLASSEXW, WS_MINIMIZEBOX, WS_OVERLAPPED, WS_SYSMENU}}};
+use windows_core::PCWSTR;
+use windows_sys::w;
 
 fn main() -> Result<()> {
-    println!("Hello, Win-rs!");
 
     unsafe {
-        let work = CreateThreadpoolWork(Some(callback), None, None)?;
+        let app_window = create_window();
 
-        for _ in 0..10 {
-            SubmitThreadpoolWork(work);
+        let _ = ShowWindow(app_window, SW_SHOW);
+        let mut msg = MSG::default();
+
+        while msg.message != WM_QUIT {
+            if PeekMessageW(&mut msg, None, 0, 0, PM_REMOVE).as_bool() {
+                let _ = TranslateMessage(&msg);
+                DispatchMessageW(&msg);
+            } else {
+
+            }
         }
-
-        WaitForThreadpoolWorkCallbacks(work, false);
-
-        CloseThreadpoolWork(work);
     }
-
-    let counter = COUNTER.read().unwrap();
-    print!("counter: {}", *counter);
-
-    println!("-----------------------------");
-
-    dx12::create();
 
     Ok(())
 }
 
-extern "system" fn callback(_: PTP_CALLBACK_INSTANCE, _: *mut std::ffi::c_void, _: PTP_WORK) {
-    let mut counter = COUNTER.write().unwrap();
-    *counter += 1;
+unsafe fn create_window() -> HWND {
+    let app_instance: HINSTANCE = GetModuleHandleW(None).unwrap().into();
+    let app_class_name = PCWSTR::from_raw(w!("Rust D3D12"));
+
+    // set up WNDCLASSEXXW struct
+    let app_class = WNDCLASSEXW
+    {
+        cbSize : mem::size_of::<WNDCLASSEXW>().try_into().unwrap(),
+        style: CS_HREDRAW | CS_VREDRAW,
+        lpfnWndProc: Some(wnd_proc),
+        cbClsExtra: 0,
+        cbWndExtra: 0,
+        hInstance: app_instance,
+        hIcon: HICON::default(),
+        hCursor: LoadCursorW(None, IDC_ARROW).unwrap(),
+        hbrBackground: GetSysColorBrush(COLOR_WINDOWFRAME),
+        lpszMenuName: PCWSTR::null(),
+        lpszClassName: app_class_name,
+        hIconSm: HICON::default(),
+    };
+
+    RegisterClassExW(&app_class);
+
+    let render_width= 1920;
+    let render_height = 1080;
+    let app_window = CreateWindowExW(WINDOW_EX_STYLE::default(), app_class_name, app_class_name, WS_OVERLAPPED | WS_MINIMIZEBOX | WS_SYSMENU, 0, 0, render_width, render_height, None, None, app_instance, None).unwrap();
+
+    app_window
+
 }
+
+ unsafe extern  "system" fn wnd_proc(h_wnd: HWND, message: u32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
+    match message {
+        WM_DESTROY => {
+            PostQuitMessage(0);
+            LRESULT::default()
+        }
+        _ => return DefWindowProcW(h_wnd, message, w_param, l_param),
+    }
+ }
