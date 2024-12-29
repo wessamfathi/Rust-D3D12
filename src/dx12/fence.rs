@@ -22,7 +22,7 @@ pub(crate) fn create() {
     }
 }
 
-fn wait_for_gpu() {
+pub(crate) fn wait_for_gpu() {
     unsafe {
         let main_fence = GMAIN_FENCE.as_ref().unwrap();
         let prev_fence_value = GMAIN_FENCE_VALUE;
