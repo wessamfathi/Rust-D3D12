@@ -1,9 +1,17 @@
-use windows::{Win32::Graphics::Direct3D12::*};
+use windows::Win32::Graphics::Direct3D12::*;
 
-mod init;
+mod device;
+mod cb;
 mod rt;
 
-pub fn create() {
-    init::init();
-    rt::create();
+const D3D_DEBUG: bool = true;
+
+pub fn init() {
+    device::create(D3D_DEBUG);
+
+    cb::create();
+
+    swapchain::create();
+
+    fence::create();
 }

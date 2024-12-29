@@ -2,10 +2,10 @@ use windows::Win32::Graphics::{Direct3D::{D3D_FEATURE_LEVEL, D3D_FEATURE_LEVEL_1
 use windows_core::Interface;
 
 static mut GDXGI_FACTORY: Option<IDXGIFactory4> = None;
-static mut GD3D12_DEVICE: Option<ID3D12Device> = None;
+pub(crate) static mut GD3D12_DEVICE: Option<ID3D12Device> = None;
 static mut GDEBUG_INFO_QUEUE: Option<ID3D12InfoQueue> = None;
 
-fn create(enable_debug: bool) {
+pub(crate) fn create(enable_debug: bool) {
     unsafe {
         let mut dxgi_factory_flag = DXGI_CREATE_FACTORY_FLAGS::default();
 
