@@ -1,7 +1,7 @@
 use windows::Win32::Graphics::{Direct3D::{D3D_FEATURE_LEVEL, D3D_FEATURE_LEVEL_12_0, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_2}, Direct3D12::{D3D12CreateDevice, D3D12GetDebugInterface, ID3D12Debug, ID3D12Device, ID3D12InfoQueue}, Dxgi::{CreateDXGIFactory2, IDXGIFactory4, DXGI_ADAPTER_FLAG_SOFTWARE, DXGI_CREATE_FACTORY_DEBUG, DXGI_CREATE_FACTORY_FLAGS}};
 use windows_core::Interface;
 
-static mut GDXGI_FACTORY: Option<IDXGIFactory4> = None;
+pub(crate) static mut GDXGI_FACTORY: Option<IDXGIFactory4> = None;
 pub(crate) static mut GD3D12_DEVICE: Option<ID3D12Device> = None;
 static mut GDEBUG_INFO_QUEUE: Option<ID3D12InfoQueue> = None;
 

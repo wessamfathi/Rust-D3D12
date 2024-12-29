@@ -2,7 +2,7 @@ use windows::Win32::Graphics::Direct3D12::{ID3D12CommandAllocator, ID3D12Command
 
 use super::device;
 
-static mut GMAIN_COMMAND_QUEUE: Option<ID3D12CommandQueue> = None;
+pub(crate) static mut GMAIN_COMMAND_QUEUE: Option<ID3D12CommandQueue> = None;
 static mut GMAIN_COMMAND_ALLOCATOR: Option<ID3D12CommandAllocator> = None;
 static mut GMAIN_COMMAND_LIST: Option<ID3D12GraphicsCommandList> = None;
 
