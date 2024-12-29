@@ -6,10 +6,17 @@ use windows::{core::Result, Win32::{Foundation::{HINSTANCE, HWND, LPARAM, LRESUL
 use windows_core::PCWSTR;
 use windows_sys::w;
 
+static mut RENDER_WIDTH: i32 = 1920;
+static mut RENDER_HEIGHT: i32 = 1080;
+
 fn main() -> Result<()> {
 
     unsafe {
         let app_window = create_window();
+
+        if !dx12::init(app_window, RENDER_WIDTH, RENDER_HEIGHT) {
+            return Ok(());
+        }
 
         let _ = ShowWindow(app_window, SW_SHOW);
         let mut msg = MSG::default();
@@ -19,10 +26,16 @@ fn main() -> Result<()> {
                 let _ = TranslateMessage(&msg);
                 DispatchMessageW(&msg);
             } else {
+                dx12::update();
 
+                // present backbuffer and wait for GPU fence (not very efficient)
+                dx12::present();
+                dx12::wait_for_gpu();
             }
         }
     }
+
+    dx12::destroy();
 
     Ok(())
 }
@@ -50,9 +63,7 @@ unsafe fn create_window() -> HWND {
 
     RegisterClassExW(&app_class);
 
-    let render_width= 1920;
-    let render_height = 1080;
-    let app_window = CreateWindowExW(WINDOW_EX_STYLE::default(), app_class_name, app_class_name, WS_OVERLAPPED | WS_MINIMIZEBOX | WS_SYSMENU, 0, 0, render_width, render_height, None, None, app_instance, None).unwrap();
+    let app_window = CreateWindowExW(WINDOW_EX_STYLE::default(), app_class_name, app_class_name, WS_OVERLAPPED | WS_MINIMIZEBOX | WS_SYSMENU, 0, 0, RENDER_WIDTH, RENDER_HEIGHT, None, None, app_instance, None).unwrap();
 
     app_window
 
