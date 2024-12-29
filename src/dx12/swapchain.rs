@@ -1,6 +1,6 @@
 use std::{mem, os::raw::c_void};
 
-use windows::Win32::{Foundation::HWND, Graphics::{Direct3D12::{ID3D12DescriptorHeap, ID3D12Resource, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_DESCRIPTOR_HEAP_DESC, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, D3D12_DESCRIPTOR_HEAP_TYPE_RTV}, Dxgi::{Common::{DXGI_FORMAT, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SAMPLE_DESC}, IDXGIFactory5, IDXGISwapChain3, DXGI_FEATURE, DXGI_FEATURE_PRESENT_ALLOW_TEARING, DXGI_MWA_NO_ALT_ENTER, DXGI_SWAP_CHAIN_DESC1, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING, DXGI_SWAP_EFFECT_FLIP_DISCARD, DXGI_USAGE_RENDER_TARGET_OUTPUT}}};
+use windows::Win32::{Foundation::HWND, Graphics::{Direct3D12::{ID3D12DescriptorHeap, ID3D12Resource, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_DESCRIPTOR_HEAP_DESC, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, D3D12_DESCRIPTOR_HEAP_TYPE_RTV}, Dxgi::{Common::{DXGI_FORMAT, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SAMPLE_DESC}, IDXGIFactory5, IDXGISwapChain3, DXGI_FEATURE, DXGI_FEATURE_PRESENT_ALLOW_TEARING, DXGI_MWA_NO_ALT_ENTER, DXGI_PRESENT, DXGI_PRESENT_ALLOW_TEARING, DXGI_SWAP_CHAIN_DESC1, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING, DXGI_SWAP_EFFECT_FLIP_DISCARD, DXGI_USAGE_RENDER_TARGET_OUTPUT}}};
 use windows_core::Interface;
 
 use super::{cb::GMAIN_COMMAND_QUEUE, device::{self, GDXGI_FACTORY}};
@@ -11,7 +11,7 @@ pub(crate) static mut GSWAPCHAIN: Option<IDXGISwapChain3> = None;
 static mut GSWAPCHAIN_HEAP: Option<ID3D12DescriptorHeap> = None;
 static mut GRTV_DESCRIPTOR_SIZE: u32 = 0;
 static mut GSWAPCHAIN_RESOURCE: [Option<ID3D12Resource>; GMAXFRAME] = [None, None];
-static mut GSUPPORT_SCREEN_TEARING: bool = false;
+pub(crate) static mut GSUPPORT_SCREEN_TEARING: bool = false;
 pub(crate) static mut GCURRENT_FRAME_INDEX: u64 = 0;
 
 pub(crate) fn create(h_wnd: HWND, render_width: u32, render_height: u32) {
@@ -86,5 +86,17 @@ pub(crate) fn create(h_wnd: HWND, render_width: u32, render_height: u32) {
 pub(crate) fn advance_frame_index() {
     unsafe {
         GCURRENT_FRAME_INDEX = GSWAPCHAIN.as_ref().unwrap().GetCurrentBackBufferIndex() as u64;
+    }
+}
+
+// present the backbuffer
+pub(crate) fn present() {
+    unsafe  {
+        let mut present_flags = DXGI_PRESENT::default();
+        if GSUPPORT_SCREEN_TEARING {
+            present_flags |= DXGI_PRESENT_ALLOW_TEARING;
+        }
+
+        let _ = GSWAPCHAIN.as_ref().unwrap().Present(0, present_flags);
     }
 }

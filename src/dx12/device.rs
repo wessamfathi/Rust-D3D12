@@ -1,5 +1,7 @@
-use windows::Win32::Graphics::{Direct3D::{D3D_FEATURE_LEVEL, D3D_FEATURE_LEVEL_12_0, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_2}, Direct3D12::{D3D12CreateDevice, D3D12GetDebugInterface, ID3D12Debug, ID3D12Device, ID3D12InfoQueue}, Dxgi::{CreateDXGIFactory2, IDXGIFactory4, DXGI_ADAPTER_FLAG_SOFTWARE, DXGI_CREATE_FACTORY_DEBUG, DXGI_CREATE_FACTORY_FLAGS}};
-use windows_core::Interface;
+use std::os::raw::c_void;
+
+use windows::Win32::Graphics::{Direct3D::{D3D_FEATURE_LEVEL, D3D_FEATURE_LEVEL_12_0, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_2}, Direct3D12::{D3D12CreateDevice, D3D12GetDebugInterface, ID3D12Debug, ID3D12Device, ID3D12InfoQueue, D3D12_MESSAGE}, Dxgi::{CreateDXGIFactory2, IDXGIFactory4, DXGI_ADAPTER_FLAG_SOFTWARE, DXGI_CREATE_FACTORY_DEBUG, DXGI_CREATE_FACTORY_FLAGS, DXGI_PRESENT, DXGI_PRESENT_ALLOW_TEARING}};
+use windows_core::{Interface, PCSTR};
 
 pub(crate) static mut GDXGI_FACTORY: Option<IDXGIFactory4> = None;
 pub(crate) static mut GD3D12_DEVICE: Option<ID3D12Device> = None;
@@ -65,6 +67,45 @@ pub(crate) fn create(enable_debug: bool) {
         // cache ID3D12InfoQueue for later use
         if GD3D12_DEVICE.is_some() && debug_controller.is_some() {
             GDEBUG_INFO_QUEUE = Some(GD3D12_DEVICE.as_ref().unwrap().cast().unwrap());
+        }
+    }
+}
+
+// update function
+pub(crate) fn update()
+{
+    unsafe 
+    {
+        // print out all error messages stored in ID3D12QueueInfo
+        if GDEBUG_INFO_QUEUE.is_some()
+        {
+            let debug_info_queue = GDEBUG_INFO_QUEUE.as_ref().unwrap();
+            let error_message_count = debug_info_queue.GetNumStoredMessages();
+
+            // print error message if there is any
+            if error_message_count > 0
+            {
+                for idx in 0..error_message_count
+                {
+                    // first GetMessage() call to get the error byte length
+                    let mut message_byte_length = 0;
+                    let _ = debug_info_queue.GetMessage(idx, None, &mut message_byte_length);                    
+
+                    // second GetMessage() to get the error and print it, be sure to allocate D3D12_MESSAGE with enough size!
+                    let error_message : Option<*mut D3D12_MESSAGE> = Some(libc::malloc(message_byte_length) as *mut D3D12_MESSAGE);
+
+                    if let Ok(()) = debug_info_queue.GetMessage(idx, error_message, &mut message_byte_length)
+                    {
+                        let unwrapped_message : *mut D3D12_MESSAGE = error_message.unwrap();
+                        println!("{}", PCSTR::from_raw((*unwrapped_message).pDescription).display());
+                    }
+
+                    libc::free(error_message.unwrap() as *mut _ as *mut c_void);
+                }
+
+                // clear all printed messages
+                debug_info_queue.ClearStoredMessages();
+            }
         }
     }
 }
